@@ -20,7 +20,14 @@ def health_check():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     contents = await file.read()
-    text = contents.decode("utf-8")
+
+    try:
+        text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return {"error": "File could not be read as text. Please upload a plain text (.txt) file."}
+
+    if not text.strip():
+        return {"error": "The uploaded file is empty."}
 
     chunk_size = 200
     chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
@@ -38,6 +45,9 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/query")
 async def query(question: str):
+    if not question.strip():
+        return {"error": "Question cannot be empty."}
+
     question_embedding = embedder.encode([question]).tolist()
     results = collection.query(query_embeddings=question_embedding, n_results=2)
 
