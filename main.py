@@ -10,8 +10,8 @@ embedder = SentenceTransformer('all-MiniLM-L6-v2')
 tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
 qa_model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
 
-chroma_client = chromadb.Client()
-collection = chroma_client.create_collection(name="documents")
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
+collection = chroma_client.get_or_create_collection(name="documents")
 
 @app.get("/health")
 def health_check():
