@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import chromadb
+from fastapi.responses import FileResponse
 
 app = FastAPI()
 
@@ -16,6 +17,10 @@ collection = chroma_client.get_or_create_collection(name="documents")
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse("index.html")
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -57,7 +62,7 @@ async def query(question: str):
     if not context:
         return {"answer": "No relevant content found. Please upload a document first."}
 
-    prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
+    prompt = f"Answer the question in a complete sentence based on the context below.\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer in a full sentence:"
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
     outputs = qa_model.generate(**inputs, max_new_tokens=100)
     answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
