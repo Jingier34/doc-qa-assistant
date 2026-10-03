@@ -72,3 +72,10 @@ async def query(question: str):
         "retrieved_context": retrieved_chunks,
         "answer": answer
     }
+
+@app.delete("/clear")
+def clear_documents():
+    global collection
+    chroma_client.delete_collection(name="documents")
+    collection = chroma_client.get_or_create_collection(name="documents")
+    return {"message": "All documents cleared."}
