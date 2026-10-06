@@ -79,3 +79,15 @@ def clear_documents():
     chroma_client.delete_collection(name="documents")
     collection = chroma_client.get_or_create_collection(name="documents")
     return {"message": "All documents cleared."}
+
+@app.get("/documents")
+def list_documents():
+    all_data = collection.get()
+    ids = all_data.get("ids", [])
+    
+    filenames = set()
+    for doc_id in ids:
+        filename = doc_id.rsplit("_", 1)[0]
+        filenames.add(filename)
+    
+    return {"documents": sorted(filenames), "total_chunks": len(ids)}
