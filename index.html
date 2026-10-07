@@ -23,6 +23,7 @@
         <button onclick="uploadFile()">Upload</button>
         <div id="uploadResult"></div>
         <button onclick="listDocuments()">Show Uploaded Documents</button>
+        <button onclick="clearDocuments()" style="background: #d9534f;">Clear All Documents</button>
         <div id="docList"></div>
     </div>
 
@@ -75,6 +76,17 @@
             const list = data.documents.map(d => `<li>${d}</li>`).join('');
             document.getElementById('docList').innerHTML =
                 `<p>Total chunks: ${data.total_chunks}</p><ul>${list}</ul>`;
+        }
+
+        async function clearDocuments() {
+            if (!confirm("Are you sure you want to clear all documents?")) {
+                return;
+            }
+            const response = await fetch(`${BASE_URL}/clear`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            document.getElementById('docList').innerText = data.message;
         }
     </script>
 </body>
