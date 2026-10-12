@@ -1,8 +1,10 @@
 from fastapi import FastAPI, UploadFile, File
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import chromadb
 from fastapi.responses import FileResponse
+from pypdf import PdfReader
+import chromadb
+import io
 
 app = FastAPI()
 
@@ -25,24 +27,34 @@ def serve_frontend():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     contents = await file.read()
+    filename = file.filename
 
-    try:
-        text = contents.decode("utf-8")
-    except UnicodeDecodeError:
-        return {"error": "File could not be read as text. Please upload a plain text (.txt) file."}
+    if filename.lower().endswith(".pdf"):
+        try:
+            reader = PdfReader(io.BytesIO(contents))
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() or ""
+        except Exception:
+            return {"error": "Could not read PDF file. Make sure it's a valid PDF."}
+    else:
+        try:
+            text = contents.decode("utf-8")
+        except UnicodeDecodeError:
+            return {"error": "File could not be read as text. Please upload a .txt or .pdf file."}
 
     if not text.strip():
-        return {"error": "The uploaded file is empty."}
+        return {"error": "The uploaded file is empty or contains no extractable text."}
 
     chunk_size = 200
     chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
     embeddings = embedder.encode(chunks).tolist()
-    ids = [f"{file.filename}_{i}" for i in range(len(chunks))]
+    ids = [f"{filename}_{i}" for i in range(len(chunks))]
     collection.add(documents=chunks, embeddings=embeddings, ids=ids)
 
     return {
-        "filename": file.filename,
+        "filename": filename,
         "text_length": len(text),
         "num_chunks": len(chunks),
         "preview": text[:200]
